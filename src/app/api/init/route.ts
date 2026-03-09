@@ -1,0 +1,56 @@
+import { NextResponse } from 'next/server';
+import { google } from 'googleapis';
+
+function getAuth() {
+  return new google.auth.JWT({
+    email: process.env.GOOGLE_SERVICE_ACCOUNT_EMAIL,
+    key: process.env.GOOGLE_PRIVATE_KEY?.replace(/\\n/g, '\n'),
+    scopes: ['https://www.googleapis.com/auth/spreadsheets'],
+  });
+}
+
+export async function GET() {
+  try {
+    const sheets = google.sheets({ version: 'v4', auth: getAuth() });
+    const id = process.env.GOOGLE_SHEETS_ID!;
+
+    // Force-write Cars headers (Hebrew only)
+    await sheets.spreadsheets.values.update({
+      spreadsheetId: id,
+      range: 'Cars!A1:M1',
+      valueInputOption: 'RAW',
+      requestBody: {
+        values: [[
+          '#',
+          'מספר רכב',
+          'יצרן',
+          'סוג רכב',
+          'תוקף טסט',
+          'ק"מ',
+          'שייך ל',
+          'חברה',
+          'תאריך הוספה',
+          'קישור לתיקייה',
+          'רישיון רכב',
+          'טופס גיוס',
+          'הושלם',
+        ]],
+      },
+    });
+
+    // Force-write Transfers headers (Hebrew only)
+    await sheets.spreadsheets.values.update({
+      spreadsheetId: id,
+      range: 'Transfers!A1:D1',
+      valueInputOption: 'RAW',
+      requestBody: {
+        values: [['מספר רכב', 'ממי', 'למי', 'תאריך העברה']],
+      },
+    });
+
+    return NextResponse.json({ success: true, message: 'Headers updated in Hebrew (13 columns)' });
+  } catch (error) {
+    const msg = error instanceof Error ? error.message : String(error);
+    return NextResponse.json({ error: msg }, { status: 500 });
+  }
+}
