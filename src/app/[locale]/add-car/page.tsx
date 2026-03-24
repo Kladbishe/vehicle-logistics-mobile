@@ -100,6 +100,7 @@ export default function AddCarPage() {
 
     setLoading(true);
     try {
+      // Request 1: car data + rishaon + giyus
       const formData = new FormData();
       formData.append('carNumber', form.carNumber.trim().toUpperCase());
       formData.append('carBrand', form.carBrand);
@@ -113,12 +114,23 @@ export default function AddCarPage() {
       formData.append('missingEquipment', form.missingEquipment);
       formData.append('rishaonPhoto', form.rishaonPhoto);
       if (form.giyusPhoto) formData.append('giyusPhoto', form.giyusPhoto);
-      form.carPhotos.forEach((photo, i) => formData.append(`carPhoto_${i}`, photo));
 
       const res = await fetch('/api/cars', { method: 'POST', body: formData });
       const data = await res.json();
-
       if (!res.ok) { showToast(data.error || t('addCar.saveFailed'), 'error'); return; }
+
+      // Request 2+: car photos in batches of 5
+      const BATCH = 5;
+      for (let start = 0; start < form.carPhotos.length; start += BATCH) {
+        const batch = form.carPhotos.slice(start, start + BATCH);
+        const fd = new FormData();
+        fd.append('folderId', data.folderId);
+        fd.append('startIndex', String(start));
+        batch.forEach((photo, i) => fd.append(`photo_${i}`, photo));
+        const r = await fetch('/api/upload-photos', { method: 'POST', body: fd });
+        if (!r.ok) { showToast(t('addCar.saveFailed'), 'error'); return; }
+      }
+
       setStep(4);
     } catch {
       showToast(t('common.connectionError'), 'error');

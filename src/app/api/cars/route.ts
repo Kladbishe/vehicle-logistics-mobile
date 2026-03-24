@@ -49,34 +49,27 @@ export async function POST(req: NextRequest) {
     // Create Drive folder
     const { id: folderId, url: folderUrl } = await createCarFolder(carNumber);
 
-    // Collect car photos
-    const carPhotoFiles: File[] = [];
-    let photoIndex = 0;
-    while (true) {
-      const photo = formData.get(`carPhoto_${photoIndex}`) as File | null;
-      if (!photo) break;
-      carPhotoFiles.push(photo);
-      photoIndex++;
+    // Upload rishaon + giyus in parallel
+    let hasRishaon = false;
+    let hasGiyus = false;
+    const uploads: Promise<void>[] = [];
+
+    if (rishaonPhoto) {
+      uploads.push(
+        rishaonPhoto.arrayBuffer()
+          .then((buf) => uploadFile(folderId, `rishaon_rehev.${rishaonPhoto.name.split('.').pop() || 'jpg'}`, Buffer.from(buf), rishaonPhoto.type))
+          .then(() => { hasRishaon = true; })
+      );
+    }
+    if (giyusPhoto) {
+      uploads.push(
+        giyusPhoto.arrayBuffer()
+          .then((buf) => uploadFile(folderId, `tofes_giyus.${giyusPhoto.name.split('.').pop() || 'jpg'}`, Buffer.from(buf), giyusPhoto.type))
+          .then(() => { hasGiyus = true; })
+      );
     }
 
-    // Upload all files in parallel
-    const [hasRishaon, hasGiyus] = await Promise.all([
-      rishaonPhoto
-        ? rishaonPhoto.arrayBuffer().then((buf) =>
-            uploadFile(folderId, `rishaon_rehev.${rishaonPhoto.name.split('.').pop() || 'jpg'}`, Buffer.from(buf), rishaonPhoto.type)
-          ).then(() => true)
-        : Promise.resolve(false),
-      giyusPhoto
-        ? giyusPhoto.arrayBuffer().then((buf) =>
-            uploadFile(folderId, `tofes_giyus.${giyusPhoto.name.split('.').pop() || 'jpg'}`, Buffer.from(buf), giyusPhoto.type)
-          ).then(() => true)
-        : Promise.resolve(false),
-      ...carPhotoFiles.map((photo, i) =>
-        photo.arrayBuffer().then((buf) =>
-          uploadFile(folderId, `car_photo_${i + 1}.${photo.name.split('.').pop() || 'jpg'}`, Buffer.from(buf), photo.type)
-        )
-      ),
-    ]).then(([r, g]) => [r, g]);
+    await Promise.all(uploads);
 
     const isComplete = hasRishaon && !!carType && !!tokefTest && !!mileage && !!assignedTo;
 
@@ -100,7 +93,7 @@ export async function POST(req: NextRequest) {
       missingEquipment,
     });
 
-    return NextResponse.json({ success: true, carNumber, folderUrl });
+    return NextResponse.json({ success: true, carNumber, folderUrl, folderId });
   } catch (error) {
     console.error('POST /api/cars error:', error);
     return NextResponse.json({ error: 'Failed to save car' }, { status: 500 });

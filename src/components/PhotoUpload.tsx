@@ -33,7 +33,7 @@ export default function PhotoUpload({
       const url = URL.createObjectURL(file);
       img.onload = () => {
         URL.revokeObjectURL(url);
-        const MAX = 1600;
+        const MAX = 1200;
         let { width, height } = img;
         if (width > MAX) { height = Math.round((height * MAX) / width); width = MAX; }
         const canvas = document.createElement('canvas');
@@ -46,7 +46,7 @@ export default function PhotoUpload({
             resolve(new File([blob], file.name.replace(/\.[^.]+$/, '.jpg'), { type: 'image/jpeg' }));
           },
           'image/jpeg',
-          0.82
+          0.72
         );
       };
       img.onerror = () => { URL.revokeObjectURL(url); resolve(file); };
