@@ -1,4 +1,3 @@
 {
-  "buildCommand": "npm run build",
-  "nodeVersion": "18.x"
+  "buildCommand": "npm run build"
 }
