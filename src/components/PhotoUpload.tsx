@@ -48,25 +48,36 @@ export default function PhotoUpload({
       <label className="block text-sm font-semibold text-gray-700">{label}</label>
       {sublabel && <p className="text-xs text-gray-500">{sublabel}</p>}
 
-      <div className="grid grid-cols-2 gap-2">
-        <button
-          type="button"
-          onClick={() => cameraRef.current?.click()}
-          className="border-2 border-dashed border-green-300 rounded-2xl p-4 flex flex-col items-center gap-1 bg-green-50 active:bg-green-100 transition-colors"
-        >
-          <span className="text-2xl">📷</span>
-          <span className="text-xs font-medium text-green-700">{t('camera')}</span>
-        </button>
-
+      {multiple ? (
         <button
           type="button"
           onClick={() => galleryRef.current?.click()}
-          className="border-2 border-dashed border-gray-300 rounded-2xl p-4 flex flex-col items-center gap-1 bg-gray-50 active:bg-gray-100 transition-colors"
+          className="w-full border-2 border-dashed border-green-300 rounded-2xl p-4 flex flex-col items-center gap-1 bg-green-50 active:bg-green-100 transition-colors"
         >
-          <span className="text-2xl">🖼️</span>
-          <span className="text-xs font-medium text-gray-600">{t('gallery')}</span>
+          <span className="text-2xl">📷</span>
+          <span className="text-xs font-medium text-green-700">{t('addPhotos')}</span>
         </button>
-      </div>
+      ) : (
+        <div className="grid grid-cols-2 gap-2">
+          <button
+            type="button"
+            onClick={() => cameraRef.current?.click()}
+            className="border-2 border-dashed border-green-300 rounded-2xl p-4 flex flex-col items-center gap-1 bg-green-50 active:bg-green-100 transition-colors"
+          >
+            <span className="text-2xl">📷</span>
+            <span className="text-xs font-medium text-green-700">{t('camera')}</span>
+          </button>
+
+          <button
+            type="button"
+            onClick={() => galleryRef.current?.click()}
+            className="border-2 border-dashed border-gray-300 rounded-2xl p-4 flex flex-col items-center gap-1 bg-gray-50 active:bg-gray-100 transition-colors"
+          >
+            <span className="text-2xl">🖼️</span>
+            <span className="text-xs font-medium text-gray-600">{t('gallery')}</span>
+          </button>
+        </div>
+      )}
 
       {items.length > 0 && (
         <p className="text-xs text-green-600 font-semibold">

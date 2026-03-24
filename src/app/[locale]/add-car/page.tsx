@@ -96,6 +96,7 @@ export default function AddCarPage() {
 
   const handleSubmit = async () => {
     if (!form.rishaonPhoto) { showToast(t('addCar.rishaonRequired'), 'error'); return; }
+    if (form.hasEquipment === null) { showToast(t('addCar.equipmentRequired'), 'error'); return; }
 
     setLoading(true);
     try {
@@ -249,7 +250,7 @@ export default function AddCarPage() {
                   onChange={(files) => set({ giyusPhoto: files[0] || null })} />
 
                 <PhotoUpload label={t('addCar.carPhotosLabel')} sublabel={t('addCar.carPhotosSublabel')} multiple={true}
-                  onChange={(files) => set({ carPhotos: [...form.carPhotos, ...files] })} />
+                  onChange={(files) => set({ carPhotos: files })} />
 
                 <div className="space-y-3">
                   <label className="block text-sm font-semibold text-gray-700">{t('addCar.hasEquipmentLabel')}</label>

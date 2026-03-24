@@ -72,6 +72,7 @@
     "filledByRequired": "Please enter who filled the form",
     "rishaonRequired": "Please take a photo of the vehicle license",
     "carExists": "A car with this number already exists",
+    "equipmentRequired": "Please indicate if equipment is present",
     "saveFailed": "Save failed"
   },
   "transferCar": {
@@ -112,6 +113,7 @@
   "photoUpload": {
     "camera": "Camera",
     "gallery": "Gallery",
+    "addPhotos": "Add Photos",
     "photoCount": "{count, plural, one {✓ {count} photo} other {✓ {count} photos}}"
   },
   "select": {

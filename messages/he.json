@@ -72,6 +72,7 @@
     "filledByRequired": "יש למלא מי מילא",
     "rishaonRequired": "נא לצלם את רישיון הרכב",
     "carExists": "רכב עם מספר זה כבר קיים במערכת",
+    "equipmentRequired": "יש לסמן אם יש כלי רכב",
     "saveFailed": "שגיאה בשמירה"
   },
   "transferCar": {
@@ -112,6 +113,7 @@
   "photoUpload": {
     "camera": "צלם",
     "gallery": "גלריה",
+    "addPhotos": "הוסף תמונות",
     "photoCount": "{count, plural, one {✓ {count} תמונה} other {✓ {count} תמונות}}"
   },
   "select": {
