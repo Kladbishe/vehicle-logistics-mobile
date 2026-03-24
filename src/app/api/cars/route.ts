@@ -3,6 +3,8 @@ import { addCar, findCarByNumber, getAllCars, initializeSpreadsheet } from '@/li
 import { createCarFolder, uploadFile } from '@/lib/google-drive';
 import { formatDateForSheet, normalizePlate } from '@/lib/utils';
 
+export const maxDuration = 60;
+
 export async function GET() {
   try {
     await initializeSpreadsheet();
@@ -39,7 +41,6 @@ export async function POST(req: NextRequest) {
     }
 
     // Check duplicate
-    await initializeSpreadsheet();
     const existing = await findCarByNumber(carNumber);
     if (existing) {
       return NextResponse.json({ error: 'Car already exists' }, { status: 409 });
@@ -48,34 +49,34 @@ export async function POST(req: NextRequest) {
     // Create Drive folder
     const { id: folderId, url: folderUrl } = await createCarFolder(carNumber);
 
-    // Upload rishaon photo
-    let hasRishaon = false;
-    if (rishaonPhoto) {
-      const buffer = Buffer.from(await rishaonPhoto.arrayBuffer());
-      const ext = rishaonPhoto.name.split('.').pop() || 'jpg';
-      await uploadFile(folderId, `rishaon_rehev.${ext}`, buffer, rishaonPhoto.type);
-      hasRishaon = true;
-    }
-
-    // Upload giyus photo
-    let hasGiyus = false;
-    if (giyusPhoto) {
-      const buffer = Buffer.from(await giyusPhoto.arrayBuffer());
-      const ext = giyusPhoto.name.split('.').pop() || 'jpg';
-      await uploadFile(folderId, `tofes_giyus.${ext}`, buffer, giyusPhoto.type);
-      hasGiyus = true;
-    }
-
-    // Upload car photos
+    // Collect car photos
+    const carPhotoFiles: File[] = [];
     let photoIndex = 0;
     while (true) {
       const photo = formData.get(`carPhoto_${photoIndex}`) as File | null;
       if (!photo) break;
-      const buffer = Buffer.from(await photo.arrayBuffer());
-      const ext = photo.name.split('.').pop() || 'jpg';
-      await uploadFile(folderId, `car_photo_${photoIndex + 1}.${ext}`, buffer, photo.type);
+      carPhotoFiles.push(photo);
       photoIndex++;
     }
+
+    // Upload all files in parallel
+    const [hasRishaon, hasGiyus] = await Promise.all([
+      rishaonPhoto
+        ? rishaonPhoto.arrayBuffer().then((buf) =>
+            uploadFile(folderId, `rishaon_rehev.${rishaonPhoto.name.split('.').pop() || 'jpg'}`, Buffer.from(buf), rishaonPhoto.type)
+          ).then(() => true)
+        : Promise.resolve(false),
+      giyusPhoto
+        ? giyusPhoto.arrayBuffer().then((buf) =>
+            uploadFile(folderId, `tofes_giyus.${giyusPhoto.name.split('.').pop() || 'jpg'}`, Buffer.from(buf), giyusPhoto.type)
+          ).then(() => true)
+        : Promise.resolve(false),
+      ...carPhotoFiles.map((photo, i) =>
+        photo.arrayBuffer().then((buf) =>
+          uploadFile(folderId, `car_photo_${i + 1}.${photo.name.split('.').pop() || 'jpg'}`, Buffer.from(buf), photo.type)
+        )
+      ),
+    ]).then(([r, g]) => [r, g]);
 
     const isComplete = hasRishaon && !!carType && !!tokefTest && !!mileage && !!assignedTo;
 

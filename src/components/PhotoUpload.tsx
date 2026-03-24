@@ -26,14 +26,42 @@ export default function PhotoUpload({
   const galleryRef = useRef<HTMLInputElement>(null);
   const [items, setItems] = useState<PhotoItem[]>([]);
 
-  const handleChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+  const compressImage = (file: File): Promise<File> =>
+    new Promise((resolve) => {
+      if (!file.type.startsWith('image/')) { resolve(file); return; }
+      const img = new Image();
+      const url = URL.createObjectURL(file);
+      img.onload = () => {
+        URL.revokeObjectURL(url);
+        const MAX = 1600;
+        let { width, height } = img;
+        if (width > MAX) { height = Math.round((height * MAX) / width); width = MAX; }
+        const canvas = document.createElement('canvas');
+        canvas.width = width;
+        canvas.height = height;
+        canvas.getContext('2d')!.drawImage(img, 0, 0, width, height);
+        canvas.toBlob(
+          (blob) => {
+            if (!blob) { resolve(file); return; }
+            resolve(new File([blob], file.name.replace(/\.[^.]+$/, '.jpg'), { type: 'image/jpeg' }));
+          },
+          'image/jpeg',
+          0.82
+        );
+      };
+      img.onerror = () => { URL.revokeObjectURL(url); resolve(file); };
+      img.src = url;
+    });
+
+  const handleChange = async (e: React.ChangeEvent<HTMLInputElement>) => {
     const files = Array.from(e.target.files || []);
     if (files.length === 0) return;
-    const newItems = files.map((file) => ({ file, url: URL.createObjectURL(file) }));
+    e.target.value = '';
+    const compressed = await Promise.all(files.map(compressImage));
+    const newItems = compressed.map((file) => ({ file, url: URL.createObjectURL(file) }));
     const updated = multiple ? [...items, ...newItems] : newItems;
     setItems(updated);
     onChange(updated.map((i) => i.file));
-    e.target.value = '';
   };
 
   const handleDelete = (index: number) => {
