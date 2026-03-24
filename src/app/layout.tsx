@@ -3,7 +3,6 @@ import type { Metadata, Viewport } from 'next';
 export const metadata: Metadata = {
   title: 'ניהול רכבים',
   description: 'Internal vehicle management system',
-  manifest: '/manifest.json',
 };
 
 export const viewport: Viewport = {
