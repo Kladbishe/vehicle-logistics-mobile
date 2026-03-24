@@ -17,28 +17,19 @@ export async function GET() {
     // Force-write Cars headers (Hebrew only)
     await sheets.spreadsheets.values.update({
       spreadsheetId: id,
-      range: 'Cars!A1:M1',
+      range: 'Cars!A1:Q1',
       valueInputOption: 'RAW',
       requestBody: {
         values: [[
-          '#',
-          'מספר רכב',
-          'יצרן',
-          'סוג רכב',
-          'תוקף טסט',
-          'ק"מ',
-          'שייך ל',
-          'חברה',
-          'תאריך הוספה',
-          'קישור לתיקייה',
-          'רישיון רכב',
-          'טופס גיוס',
-          'הושלם',
+          '#', 'מספר רכב', 'יצרן', 'סוג רכב', 'תוקף טסט', 'ק"מ',
+          'שייך ל', 'חברה', 'תאריך הוספה', 'קישור לתיקייה',
+          'רישיון רכב', 'טופס גיוס', 'הושלם', 'מזוכה',
+          'מי מילא', 'יש כלי רכב', 'מה חסר',
         ]],
       },
     });
 
-    // Force-write Transfers headers (Hebrew only)
+    // Force-write Transfers headers
     await sheets.spreadsheets.values.update({
       spreadsheetId: id,
       range: 'Transfers!A1:D1',
@@ -48,7 +39,7 @@ export async function GET() {
       },
     });
 
-    return NextResponse.json({ success: true, message: 'Headers updated in Hebrew (13 columns)' });
+    return NextResponse.json({ success: true, message: 'Headers updated (17 columns A-Q)' });
   } catch (error) {
     const msg = error instanceof Error ? error.message : String(error);
     return NextResponse.json({ error: msg }, { status: 500 });

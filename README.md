@@ -1,148 +1,157 @@
-# ניהול רכבים / Vehicle Logistics Mobile
+# Vehicle Logistics Mobile
 
-Internal vehicle tracking web app. Mobile-first, bilingual Hebrew + Russian. RTL support for Hebrew.
+Internal vehicle tracking web app. Mobile-first, Hebrew UI (with English toggle) and RTL support.
 
 ## Tech Stack
 
 - **Next.js 14** (App Router)
 - **TypeScript**
 - **Tailwind CSS**
+- **next-intl** (Hebrew + English i18n)
 - **googleapis** (Google Sheets API v4 + Google Drive API v3)
 
 ---
 
-## Setup Instructions
+## Quick Start
 
-### 1. Google Cloud Project & Service Account
+### 1. Clone and install
 
-1. Go to [Google Cloud Console](https://console.cloud.google.com/)
-2. Create a new project (or use existing)
-3. Enable these APIs:
-   - **Google Sheets API**
-   - **Google Drive API**
-4. Go to **IAM & Admin → Service Accounts** → Create Service Account
-5. Give it any name (e.g., `vehicle-logistics-sa`)
-6. Click the service account → **Keys** tab → **Add Key** → **Create new key** → JSON
-7. Download the JSON key file — you'll need `client_email` and `private_key` from it
+```bash
+npm install
+```
 
-### 2. Google Sheets Setup
-
-1. Create a new Google Spreadsheet at [sheets.google.com](https://sheets.google.com)
-2. Create two sheets (tabs) named exactly:
-   - `Cars`
-   - `Transfers`
-3. Share the spreadsheet with the service account email (give **Editor** access)
-4. Copy the Spreadsheet ID from the URL:
-   ```
-   https://docs.google.com/spreadsheets/d/YOUR_SPREADSHEET_ID_HERE/edit
-   ```
-
-The app will automatically create headers in both sheets on first use.
-
-**Cars sheet columns (A–I):**
-| Column | Field |
-|--------|-------|
-| A | מספר רכב / Номер машины |
-| B | סוג רכב / Тип машины |
-| C | תוקף טסט / Токеф тест |
-| D | ק"מ / Километраж |
-| E | שייך ל / Кому относится |
-| F | תאריך הוספה / Дата добавления |
-| G | קישור לתיקייה / Ссылка на папку (HYPERLINK formula) |
-| H | רישיון רכב / Ришаен рехев (✓ / ✗) |
-| I | הושלם / Заполнено (✓ / ✗) |
-
-**Transfers sheet columns (A–D):**
-| Column | Field |
-|--------|-------|
-| A | מספר רכב / Номер машины |
-| B | ממי / Кому было |
-| C | למי / Кому стало |
-| D | תאריך העברה / Дата передачи |
-
-### 3. Google Drive Setup
-
-1. Go to [Google Drive](https://drive.google.com)
-2. Create a folder named `cars` (or any name you prefer)
-3. Share this folder with the service account email (give **Editor** access)
-4. Copy the folder ID from the URL:
-   ```
-   https://drive.google.com/drive/folders/YOUR_FOLDER_ID_HERE
-   ```
-
-### 4. Configure Environment Variables
-
-Copy `.env.local.example` to `.env.local` and fill in your values:
+### 2. Configure environment variables
 
 ```bash
 cp .env.local.example .env.local
 ```
 
-Edit `.env.local`:
+Fill in `.env.local` with your values (see [Environment Variables](#environment-variables) below).
 
-```env
-GOOGLE_SERVICE_ACCOUNT_EMAIL=your-service-account@your-project.iam.gserviceaccount.com
-GOOGLE_PRIVATE_KEY="-----BEGIN RSA PRIVATE KEY-----\nMIIEo...\n-----END RSA PRIVATE KEY-----\n"
+### 3. Configure your organization data
 
-GOOGLE_SHEETS_ID=1BxiMVs0XRA5nFMdKvBdBZjgmUUqptlbs74OgVE2upms
-GOOGLE_DRIVE_ROOT_FOLDER_ID=1A2B3C4D5E6F7G8H9I0J
+Edit **`src/config/app-config.ts`** — this is the only file you need to customize:
+
+```ts
+export const CAR_BRANDS = ['Toyota', 'Ford', ...];   // vehicle brands
+export const CAR_TYPES  = ['Sedan', 'Truck', ...];   // vehicle categories
+export const COMPANIES  = ['Company A', ...];         // fleet companies
+export const DRIVERS    = ['Alice', 'Bob', ...];      // assignable people
 ```
 
-**Important for `GOOGLE_PRIVATE_KEY`:** Copy the entire private key from your JSON file. Replace actual newlines with `\n` if needed, or keep the key as-is with the quotes wrapping it.
+All dropdowns support a free-text **"Add New"** option, so one-off values don't require editing this file.
 
----
-
-## Local Development
+### 4. Run locally
 
 ```bash
-npm install
 npm run dev
 ```
 
-App runs at [http://localhost:3000](http://localhost:3000)
+App runs at [http://localhost:3000](http://localhost:3000) — redirects to `/he/` (Hebrew) by default.
 
 ---
 
-## Deployment to Vercel
+## Environment Variables
 
-1. Push this repo to GitHub
-2. Go to [vercel.com](https://vercel.com) → New Project → Import your repo
-3. Add environment variables in Vercel dashboard (Settings → Environment Variables):
-   - `GOOGLE_SERVICE_ACCOUNT_EMAIL`
-   - `GOOGLE_PRIVATE_KEY`
-   - `GOOGLE_SHEETS_ID`
-   - `GOOGLE_DRIVE_ROOT_FOLDER_ID`
-4. Deploy
+Copy `.env.local.example` to `.env.local` and fill in:
 
-**Note for `GOOGLE_PRIVATE_KEY` on Vercel:** Paste the full private key value including `-----BEGIN RSA PRIVATE KEY-----` and `-----END RSA PRIVATE KEY-----`. Vercel handles the newlines correctly.
+```env
+# Google Service Account (for Sheets read/write)
+GOOGLE_SERVICE_ACCOUNT_EMAIL=your-service-account@project.iam.gserviceaccount.com
+GOOGLE_PRIVATE_KEY="-----BEGIN PRIVATE KEY-----\n...\n-----END PRIVATE KEY-----\n"
 
----
+# Google Spreadsheet ID (from the spreadsheet URL)
+GOOGLE_SHEETS_ID=your_spreadsheet_id
 
-## How to Edit Car Types
+# Google Drive — OAuth2 for personal account
+GOOGLE_OAUTH_CLIENT_ID=your_oauth_client_id
+GOOGLE_OAUTH_CLIENT_SECRET=your_oauth_client_secret
+GOOGLE_OAUTH_REFRESH_TOKEN=your_refresh_token   # run: node scripts/get-drive-token.mjs
 
-Open `src/config/car-types.ts` and edit the `CAR_TYPES` array:
-
-```ts
-export const CAR_TYPES: string[] = [
-  'סדאן / Седан',
-  'ג\'יפ / Джип / SUV',
-  // Add your types here...
-  'אחר / Другое',
-];
+# Root folder in Google Drive where car folders are created
+GOOGLE_DRIVE_ROOT_FOLDER_ID=your_folder_id
 ```
 
-Each entry appears as an option in the "Add Car" dropdown. Format: Hebrew / Russian (bilingual).
+---
+
+## Google Cloud Setup
+
+### Service Account (Google Sheets)
+
+1. Go to [Google Cloud Console](https://console.cloud.google.com/)
+2. Enable **Google Sheets API** and **Google Drive API**
+3. Create a Service Account → download JSON key → copy `client_email` and `private_key`
+4. Share your spreadsheet with the service account email (Editor access)
+
+### OAuth2 (Google Drive)
+
+The app uses OAuth2 (personal account) for Drive uploads. Run once:
+
+```bash
+node scripts/get-drive-token.mjs
+```
+
+---
+
+## Google Sheets Columns (A–Q)
+
+The app auto-creates `Cars` and `Transfers` sheets on first use.
+
+| Column | Field |
+|--------|-------|
+| A | # (auto) |
+| B | Car number |
+| C | Brand |
+| D | Car type |
+| E | Test expiry date |
+| F | Mileage |
+| G | Assigned to |
+| H | Company |
+| I | Date added |
+| J | Drive folder link |
+| K | Vehicle license (✓/✗) |
+| L | Recruitment form (✓/✗) |
+| M | Complete (✓/✗) |
+| N | Cleared (✓/✗) |
+| O | Filled by |
+| P | Equipment present (✓/✗/—) |
+| Q | Missing equipment |
+
+After first deploy, visit `/api/init` once to write column headers to an existing sheet.
+
+---
+
+## Deployment (Vercel)
+
+1. Push this repo to GitHub
+2. [vercel.com](https://vercel.com) → New Project → Import repo
+3. Add all environment variables in **Settings → Environment Variables**
+4. Deploy
+5. Visit `https://your-app.vercel.app/api/init` once to initialize sheet headers
+
+---
+
+## i18n
+
+| Locale | URL | Direction |
+|--------|-----|-----------|
+| Hebrew (default) | `/he/` | RTL |
+| English | `/en/` | LTR |
+
+A language toggle button (**HE / EN**) is visible in the header on every page.
+
+Translation strings live in `messages/he.json` and `messages/en.json`.
 
 ---
 
 ## App Features
 
-- **Add Car** — 3-step form: license plate → details (type, tokef test, mileage, assigned to) → photos (rishaon + car photos)
-- **Transfer Car** — Search by plate number, reassign to new person, logs transfer history
-- **Google Drive** — Auto-creates a folder per car, uploads rishaon photo + car photos
-- **Google Sheets** — All data stored in two sheets: Cars + Transfers history
-- **Mobile-first** — Optimized for phones, prevents iOS zoom on input focus
-- **Bilingual** — Hebrew (RTL) + Russian labels throughout
+- **Add Car** — 3-step form: license plate → details → photos (license doc, recruitment form, car photos)
+- **Transfer Car** — search by plate, reassign to new person, logs transfer history
+- **Clear Car** — upload clearance form; marks car as cleared in Sheets, or saves to shared folder if car not found
+- **Google Drive** — auto-creates a folder per car, uploads all photos
+- **Google Sheets** — all data stored in Cars + Transfers sheets
+- **Mobile-first** — optimized for phones, works in Android/iOS browser
 
 ---
 
@@ -151,22 +160,35 @@ Each entry appears as an option in the "Add Car" dropdown. Format: Hebrew / Russ
 ```
 src/
 ├── app/
-│   ├── layout.tsx          # Root layout with viewport meta
-│   ├── page.tsx            # Home screen (Add Car / Transfer Car)
-│   ├── globals.css         # Tailwind + global styles
-│   ├── add-car/page.tsx    # Multi-step add car form
-│   ├── transfer-car/page.tsx # Transfer car form
+│   ├── layout.tsx                        # Root layout (metadata only)
+│   ├── [locale]/
+│   │   ├── layout.tsx                    # Locale layout (lang, dir, i18n provider)
+│   │   ├── page.tsx                      # Home screen
+│   │   ├── add-car/page.tsx              # Add car form
+│   │   ├── transfer-car/page.tsx         # Transfer car form
+│   │   └── zikhuy-car/page.tsx           # Clear car form
 │   └── api/
-│       ├── cars/route.ts           # GET all cars, POST new car
-│       └── cars/[carNumber]/route.ts # GET one car, PUT transfer
+│       ├── cars/route.ts                 # GET all cars, POST new car
+│       ├── cars/[carNumber]/route.ts     # GET one car, PUT transfer
+│       ├── zikhuy/route.ts               # POST clear car
+│       └── init/route.ts                 # Initialize sheet headers (run once)
 ├── components/
-│   ├── Header.tsx      # App header
-│   ├── PhotoUpload.tsx # Camera/file upload with preview
-│   └── Toast.tsx       # Notification toasts
+│   ├── Header.tsx          # App header with logo + language switcher
+│   ├── PhotoUpload.tsx     # Camera/gallery upload with delete button
+│   ├── SelectWithCustom.tsx
+│   └── Toast.tsx
+├── config/
+│   └── app-config.ts       # ← EDIT THIS: car brands, types, companies, drivers
+├── i18n/
+│   ├── routing.ts          # Locale list and default locale
+│   └── request.ts          # next-intl server config
 ├── lib/
-│   ├── google-sheets.ts  # All Sheets API operations
-│   ├── google-drive.ts   # All Drive API operations
-│   └── utils.ts          # Date formatting, plate normalization
-└── config/
-    └── car-types.ts      # Editable list of car types
+│   ├── google-sheets.ts    # All Sheets API operations
+│   ├── google-drive.ts     # All Drive API operations
+│   └── utils.ts
+├── middleware.ts            # next-intl locale routing
+└── navigation.ts            # Locale-aware Link, useRouter, usePathname
+messages/
+├── he.json                  # Hebrew translations
+└── en.json                  # English translations
 ```

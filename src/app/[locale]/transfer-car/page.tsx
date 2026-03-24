@@ -1,7 +1,8 @@
 'use client';
 
 import { useState } from 'react';
-import Link from 'next/link';
+import { useTranslations } from 'next-intl';
+import { Link } from '@/navigation';
 import Header from '@/components/Header';
 import Toast from '@/components/Toast';
 
@@ -23,6 +24,7 @@ interface ToastState {
 }
 
 export default function TransferCarPage() {
+  const t = useTranslations();
   const [step, setStep] = useState<Step>(1);
   const [loading, setLoading] = useState(false);
   const [toast, setToast] = useState<ToastState | null>(null);
@@ -36,10 +38,8 @@ export default function TransferCarPage() {
 
   const handleSearch = async () => {
     const num = searchNumber.trim();
-    if (!num) {
-      showToast('יש להזין מספר רכב', 'error');
-      return;
-    }
+    if (!num) { showToast(t('common.carNumberRequired'), 'error'); return; }
+    if (num.replace(/\D/g, '').length <= 4) { showToast(t('common.carNumberTooShort'), 'error'); return; }
 
     setLoading(true);
     try {
@@ -47,7 +47,7 @@ export default function TransferCarPage() {
       const data = await res.json();
 
       if (!data.exists) {
-        showToast('רכב לא נמצא. בדוק את המספר.', 'error');
+        showToast(t('transferCar.notFound'), 'error');
         return;
       }
 
@@ -55,21 +55,15 @@ export default function TransferCarPage() {
       setNewAssignedTo('');
       setStep(2);
     } catch {
-      showToast('שגיאת חיבור. נסה שוב.', 'error');
+      showToast(t('common.connectionError'), 'error');
     } finally {
       setLoading(false);
     }
   };
 
   const handleTransfer = async () => {
-    if (!newAssignedTo.trim()) {
-      showToast('יש להזין שם חדש', 'error');
-      return;
-    }
-    if (newAssignedTo.trim() === carInfo?.assignedTo) {
-      showToast('זהה לבעלים הנוכחי. שנה את הערך.', 'error');
-      return;
-    }
+    if (!newAssignedTo.trim()) { showToast(t('transferCar.nameRequired'), 'error'); return; }
+    if (newAssignedTo.trim() === carInfo?.assignedTo) { showToast(t('transferCar.sameOwner'), 'error'); return; }
 
     setLoading(true);
     try {
@@ -82,13 +76,13 @@ export default function TransferCarPage() {
       const data = await res.json();
 
       if (!res.ok) {
-        showToast(data.error || 'שגיאה', 'error');
+        showToast(data.error || t('common.error'), 'error');
         return;
       }
 
       setStep(3);
     } catch {
-      showToast('שגיאת חיבור. נסה שוב.', 'error');
+      showToast(t('common.connectionError'), 'error');
     } finally {
       setLoading(false);
     }
@@ -99,26 +93,25 @@ export default function TransferCarPage() {
       <Header />
 
       <div className="bg-white border-b px-4 py-3 flex items-center gap-3 max-w-lg mx-auto w-full">
-        <Link href="/" className="text-green-600 font-medium text-sm">← חזרה</Link>
-        <div className="flex-1 text-center text-sm font-semibold text-gray-500">העברת רכב</div>
+        <Link href="/" className="text-green-600 font-medium text-sm">{t('common.back')}</Link>
+        <div className="flex-1 text-center text-sm font-semibold text-gray-500">{t('transferCar.pageTitle')}</div>
         <div className="w-12" />
       </div>
 
       <main className="flex-1 px-6 py-6 max-w-lg mx-auto w-full">
 
-        {/* STEP 1: Search */}
         {step === 1 && (
           <div className="space-y-6">
             <div>
-              <h2 className="text-xl font-bold text-gray-800">חיפוש רכב</h2>
+              <h2 className="text-xl font-bold text-gray-800">{t('transferCar.step1Title')}</h2>
             </div>
             <div className="space-y-2">
-              <label className="block text-sm font-semibold text-gray-700">מספר רכב</label>
+              <label className="block text-sm font-semibold text-gray-700">{t('common.carNumber')}</label>
               <input
                 type="text"
                 value={searchNumber}
                 onChange={(e) => setSearchNumber(e.target.value)}
-                placeholder="לדוגמה: 12-345-67"
+                placeholder={t('common.carNumberPlaceholder')}
                 className="w-full border-2 border-gray-200 rounded-2xl px-4 py-4 text-lg font-bold text-center tracking-widest focus:outline-none focus:border-green-600"
                 autoFocus
                 onKeyDown={(e) => e.key === 'Enter' && handleSearch()}
@@ -127,52 +120,51 @@ export default function TransferCarPage() {
             <button
               onClick={handleSearch}
               disabled={loading}
-              className="w-full bg-green-600 text-white py-4 rounded-2xl font-bold text-base disabled:opacity-50 active:bg-blue-700"
+              className="w-full bg-green-600 text-white py-4 rounded-2xl font-bold text-base disabled:opacity-50 active:bg-green-700"
             >
-              {loading ? 'מחפש...' : '🔍 חפש'}
+              {loading ? t('common.searching') : t('common.search')}
             </button>
           </div>
         )}
 
-        {/* STEP 2: Transfer form */}
         {step === 2 && carInfo && (
           <div className="space-y-5">
-            <h2 className="text-xl font-bold text-gray-800">העברת רכב</h2>
+            <h2 className="text-xl font-bold text-gray-800">{t('transferCar.step2Title')}</h2>
 
             <div className="bg-green-50 border border-green-200 rounded-2xl p-4 space-y-2">
               <div className="flex justify-between items-center">
-                <span className="text-sm text-gray-500">מספר רכב</span>
+                <span className="text-sm text-gray-500">{t('common.carNumber')}</span>
                 <span className="font-bold text-gray-800">{carInfo.carNumber}</span>
               </div>
               {carInfo.carBrand && (
                 <div className="flex justify-between items-center">
-                  <span className="text-sm text-gray-500">יצרן</span>
+                  <span className="text-sm text-gray-500">{t('transferCar.brand')}</span>
                   <span className="text-gray-700">{carInfo.carBrand}</span>
                 </div>
               )}
               <div className="flex justify-between items-center">
-                <span className="text-sm text-gray-500">סוג</span>
+                <span className="text-sm text-gray-500">{t('transferCar.type')}</span>
                 <span className="text-gray-700">{carInfo.carType}</span>
               </div>
               {carInfo.company && (
                 <div className="flex justify-between items-center">
-                  <span className="text-sm text-gray-500">חברה</span>
+                  <span className="text-sm text-gray-500">{t('transferCar.company')}</span>
                   <span className="text-gray-700">{carInfo.company}</span>
                 </div>
               )}
               <div className="flex justify-between items-center border-t border-green-200 pt-2 mt-1">
-                <span className="text-sm text-gray-500">שייך כעת ל</span>
+                <span className="text-sm text-gray-500">{t('transferCar.currentOwner')}</span>
                 <span className="font-semibold text-gray-800">{carInfo.assignedTo || '—'}</span>
               </div>
             </div>
 
             <div className="space-y-2">
-              <label className="block text-sm font-semibold text-gray-700">העבר ל *</label>
+              <label className="block text-sm font-semibold text-gray-700">{t('transferCar.transferToLabel')}</label>
               <input
                 type="text"
                 value={newAssignedTo}
                 onChange={(e) => setNewAssignedTo(e.target.value)}
-                placeholder="שם החדש"
+                placeholder={t('transferCar.transferToPlaceholder')}
                 className="w-full border-2 border-gray-200 rounded-2xl px-4 py-4 focus:outline-none focus:border-green-600"
                 autoFocus
               />
@@ -193,25 +185,24 @@ export default function TransferCarPage() {
                 onClick={() => setStep(1)}
                 className="flex-1 bg-white border-2 border-gray-200 text-gray-700 py-4 rounded-2xl font-bold"
               >
-                ← חזרה
+                {t('common.back')}
               </button>
               <button
                 onClick={handleTransfer}
                 disabled={loading}
                 className="flex-[2] bg-green-600 text-white py-4 rounded-2xl font-bold disabled:opacity-50 active:bg-green-600"
               >
-                {loading ? 'שומר...' : '✓ העבר'}
+                {loading ? t('transferCar.transferring') : t('transferCar.transfer')}
               </button>
             </div>
           </div>
         )}
 
-        {/* STEP 3: Success */}
         {step === 3 && (
           <div className="text-center space-y-6 py-10">
             <div className="text-7xl">✅</div>
             <div>
-              <h2 className="text-2xl font-bold text-gray-800">הרכב הועבר!</h2>
+              <h2 className="text-2xl font-bold text-gray-800">{t('transferCar.successTitle')}</h2>
             </div>
             <div className="bg-green-50 border border-green-200 rounded-2xl p-4 text-sm">
               <p className="text-gray-600">
@@ -225,13 +216,13 @@ export default function TransferCarPage() {
                 onClick={() => { setStep(1); setSearchNumber(''); setCarInfo(null); setNewAssignedTo(''); }}
                 className="block w-full bg-green-600 text-white py-4 rounded-2xl font-bold"
               >
-                העבר רכב נוסף
+                {t('transferCar.transferAnother')}
               </button>
               <Link
                 href="/"
                 className="block w-full bg-white border-2 border-gray-200 text-gray-700 py-4 rounded-2xl font-bold text-center"
               >
-                ← חזרה לדף הבית
+                {t('common.backToHome')}
               </Link>
             </div>
           </div>

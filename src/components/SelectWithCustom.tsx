@@ -1,6 +1,7 @@
 'use client';
 
 import { useState, useEffect } from 'react';
+import { useTranslations } from 'next-intl';
 
 interface SelectWithCustomProps {
   label: string;
@@ -19,10 +20,14 @@ export default function SelectWithCustom({
   options,
   value,
   onChange,
-  placeholder = 'בחר / Выберите',
-  customPlaceholder = 'הכנס ערך חדש / Введите новое значение',
+  placeholder,
+  customPlaceholder,
   required,
 }: SelectWithCustomProps) {
+  const t = useTranslations('select');
+  const resolvedPlaceholder = placeholder ?? t('choose');
+  const resolvedCustomPlaceholder = customPlaceholder ?? t('enterValue');
+
   // If current value is not in options list — it's a custom value
   const isCustom = value !== '' && !options.includes(value);
   const [selectValue, setSelectValue] = useState(isCustom ? CUSTOM_KEY : value);
@@ -59,13 +64,13 @@ export default function SelectWithCustom({
       <select
         value={selectValue}
         onChange={handleSelectChange}
-        className="w-full border-2 border-gray-200 rounded-2xl px-4 py-4 focus:outline-none focus:border-blue-500 bg-white"
+        className="w-full border-2 border-gray-200 rounded-2xl px-4 py-4 focus:outline-none focus:border-green-600 bg-white"
       >
-        <option value="">{placeholder}</option>
+        <option value="">{resolvedPlaceholder}</option>
         {options.map((opt) => (
           <option key={opt} value={opt}>{opt}</option>
         ))}
-        <option value={CUSTOM_KEY}>➕ הוסף חדש / Добавить новое</option>
+        <option value={CUSTOM_KEY}>{t('addNew')}</option>
       </select>
 
       {selectValue === CUSTOM_KEY && (
@@ -73,8 +78,8 @@ export default function SelectWithCustom({
           type="text"
           value={customValue}
           onChange={handleCustomChange}
-          placeholder={customPlaceholder}
-          className="w-full border-2 border-blue-300 rounded-2xl px-4 py-4 focus:outline-none focus:border-blue-500 bg-blue-50"
+          placeholder={resolvedCustomPlaceholder}
+          className="w-full border-2 border-green-300 rounded-2xl px-4 py-4 focus:outline-none focus:border-green-600 bg-green-50"
           autoFocus
         />
       )}

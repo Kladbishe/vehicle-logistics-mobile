@@ -17,9 +17,10 @@ function getSheetsClient() {
 
 const SPREADSHEET_ID = process.env.GOOGLE_SHEETS_ID!;
 
-// Column layout (A=# auto, B=carNumber, C=carBrand, D=carType, E=tokefTest,
-//                F=mileage, G=assignedTo, H=company, I=dateAdded, J=folderUrl,
-//                K=hasRishaon, L=hasGiyus, M=isComplete)
+// Column layout:
+// A=# B=carNumber C=carBrand D=carType E=tokefTest F=mileage G=assignedTo
+// H=company I=dateAdded J=folderUrl K=hasRishaon L=hasGiyus M=isComplete
+// N=hasZikhuy O=filledBy P=hasEquipment Q=missingEquipment
 
 export interface CarRecord {
   carNumber: string;
@@ -34,6 +35,10 @@ export interface CarRecord {
   hasRishaon: boolean;
   hasGiyus: boolean;
   isComplete: boolean;
+  hasZikhuy: boolean;
+  filledBy: string;
+  hasEquipment: boolean | null;
+  missingEquipment: string;
 }
 
 export interface TransferRecord {
@@ -64,38 +69,27 @@ export async function initializeSpreadsheet() {
     });
   }
 
-  // Cars headers (A=# B=מספר רכב C=יצרן D=סוג E=תוקף F=ק"מ G=שייך ל H=חברה I=תאריך J=קישור K=רישיון L=טופס גיוס M=הושלם)
   const carsRes = await sheets.spreadsheets.values.get({
     spreadsheetId: SPREADSHEET_ID,
-    range: 'Cars!A1:M1',
+    range: 'Cars!A1:Q1',
   });
 
   if (!carsRes.data.values || carsRes.data.values.length === 0) {
     await sheets.spreadsheets.values.update({
       spreadsheetId: SPREADSHEET_ID,
-      range: 'Cars!A1:M1',
+      range: 'Cars!A1:Q1',
       valueInputOption: 'RAW',
       requestBody: {
         values: [[
-          '#',
-          'מספר רכב',
-          'יצרן',
-          'סוג רכב',
-          'תוקף טסט',
-          'ק"מ',
-          'שייך ל',
-          'חברה',
-          'תאריך הוספה',
-          'קישור לתיקייה',
-          'רישיון רכב',
-          'טופס גיוס',
-          'הושלם',
+          '#', 'מספר רכב', 'יצרן', 'סוג רכב', 'תוקף טסט', 'ק"מ',
+          'שייך ל', 'חברה', 'תאריך הוספה', 'קישור לתיקייה',
+          'רישיון רכב', 'טופס גיוס', 'הושלם', 'מזוכה',
+          'מי מילא', 'יש כלי רכב', 'מה חסר',
         ]],
       },
     });
   }
 
-  // Transfers headers
   const transfersRes = await sheets.spreadsheets.values.get({
     spreadsheetId: SPREADSHEET_ID,
     range: 'Transfers!A1:D1',
@@ -117,11 +111,10 @@ export async function findCarByNumber(carNumber: string): Promise<CarRecord | nu
   const sheets = getSheetsClient();
   const res = await sheets.spreadsheets.values.get({
     spreadsheetId: SPREADSHEET_ID,
-    range: 'Cars!A:M',
+    range: 'Cars!A:Q',
   });
 
   const rows = res.data.values || [];
-  // carNumber is in column B (index 1), skip header row
   const row = rows.slice(1).find((r) => r[1]?.toString().toUpperCase() === carNumber.toUpperCase());
 
   if (!row) return null;
@@ -143,19 +136,26 @@ function rowToCarRecord(row: string[]): CarRecord {
     hasRishaon: row[10] === '✓',
     hasGiyus: row[11] === '✓',
     isComplete: row[12] === '✓',
+    hasZikhuy: row[13] === '✓',
+    filledBy: row[14] || '',
+    hasEquipment: row[15] === '✓' ? true : row[15] === '✗' ? false : null,
+    missingEquipment: row[16] || '',
   };
 }
 
 export async function addCar(car: CarRecord): Promise<void> {
   const sheets = getSheetsClient();
 
+  const equipmentValue =
+    car.hasEquipment === true ? '✓' : car.hasEquipment === false ? '✗' : '—';
+
   await sheets.spreadsheets.values.append({
     spreadsheetId: SPREADSHEET_ID,
-    range: 'Cars!A:M',
+    range: 'Cars!A:Q',
     valueInputOption: 'USER_ENTERED',
     requestBody: {
       values: [[
-        '=ROW()-1',  // # auto-numbering
+        '=ROW()-1',
         car.carNumber,
         car.carBrand,
         car.carType,
@@ -168,9 +168,40 @@ export async function addCar(car: CarRecord): Promise<void> {
         car.hasRishaon ? '✓' : '✗',
         car.hasGiyus ? '✓' : '✗',
         car.isComplete ? '✓' : '✗',
+        '✗',
+        car.filledBy,
+        equipmentValue,
+        car.missingEquipment,
       ]],
     },
   });
+}
+
+export async function markCarAsZikhuy(carNumber: string): Promise<boolean> {
+  const sheets = getSheetsClient();
+
+  const res = await sheets.spreadsheets.values.get({
+    spreadsheetId: SPREADSHEET_ID,
+    range: 'Cars!A:B',
+  });
+
+  const rows = res.data.values || [];
+  const rowIndex = rows.findIndex(
+    (r, i) => i > 0 && r[1]?.toString().toUpperCase() === carNumber.toUpperCase()
+  );
+
+  if (rowIndex === -1) return false;
+
+  const sheetRow = rowIndex + 1;
+
+  await sheets.spreadsheets.values.update({
+    spreadsheetId: SPREADSHEET_ID,
+    range: `Cars!N${sheetRow}`,
+    valueInputOption: 'RAW',
+    requestBody: { values: [['✓']] },
+  });
+
+  return true;
 }
 
 export async function transferCar(
@@ -180,7 +211,6 @@ export async function transferCar(
 ): Promise<boolean> {
   const sheets = getSheetsClient();
 
-  // Read columns A:G to find the row (carNumber=B=index1, assignedTo=G=index6)
   const res = await sheets.spreadsheets.values.get({
     spreadsheetId: SPREADSHEET_ID,
     range: 'Cars!A:G',
@@ -192,16 +222,13 @@ export async function transferCar(
   if (rowIndex === -1) return false;
 
   const oldAssignedTo = rows[rowIndex][6] || '';
-  const sheetRow = rowIndex + 1; // 1-indexed
+  const sheetRow = rowIndex + 1;
 
-  // Column G = assignedTo
   await sheets.spreadsheets.values.update({
     spreadsheetId: SPREADSHEET_ID,
     range: `Cars!G${sheetRow}`,
     valueInputOption: 'RAW',
-    requestBody: {
-      values: [[newAssignedTo]],
-    },
+    requestBody: { values: [[newAssignedTo]] },
   });
 
   await sheets.spreadsheets.values.append({
@@ -220,7 +247,7 @@ export async function getAllCars(): Promise<CarRecord[]> {
   const sheets = getSheetsClient();
   const res = await sheets.spreadsheets.values.get({
     spreadsheetId: SPREADSHEET_ID,
-    range: 'Cars!A:M',
+    range: 'Cars!A:Q',
   });
 
   const rows = res.data.values || [];

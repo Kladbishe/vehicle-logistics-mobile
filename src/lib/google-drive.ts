@@ -51,6 +51,31 @@ export async function createCarFolder(carNumber: string): Promise<{ id: string; 
   };
 }
 
+export async function getOrCreateZikhuyFolder(): Promise<string> {
+  const drive = getDriveClient();
+  const folderName = 'טופסי זיכוי';
+
+  const existing = await drive.files.list({
+    q: `name='${folderName}' and '${ROOT_FOLDER_ID}' in parents and mimeType='application/vnd.google-apps.folder' and trashed=false`,
+    fields: 'files(id)',
+  });
+
+  if (existing.data.files && existing.data.files.length > 0) {
+    return existing.data.files[0].id!;
+  }
+
+  const folder = await drive.files.create({
+    requestBody: {
+      name: folderName,
+      mimeType: 'application/vnd.google-apps.folder',
+      parents: [ROOT_FOLDER_ID],
+    },
+    fields: 'id',
+  });
+
+  return folder.data.id!;
+}
+
 export async function uploadFile(
   folderId: string,
   fileName: string,

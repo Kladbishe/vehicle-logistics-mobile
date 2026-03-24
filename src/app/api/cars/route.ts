@@ -27,6 +27,11 @@ export async function POST(req: NextRequest) {
     const company = formData.get('company') as string;
     const rishaonPhoto = formData.get('rishaonPhoto') as File | null;
     const giyusPhoto = formData.get('giyusPhoto') as File | null;
+    const filledBy = (formData.get('filledBy') as string) || '';
+    const hasEquipmentRaw = formData.get('hasEquipment') as string;
+    const hasEquipment: boolean | null =
+      hasEquipmentRaw === 'yes' ? true : hasEquipmentRaw === 'no' ? false : null;
+    const missingEquipment = (formData.get('missingEquipment') as string) || '';
 
     // Validation
     if (!carNumber || !carBrand || !carType || !tokefTest || !mileage || !assignedTo || !company) {
@@ -88,6 +93,10 @@ export async function POST(req: NextRequest) {
       hasRishaon,
       hasGiyus,
       isComplete,
+      hasZikhuy: false,
+      filledBy,
+      hasEquipment,
+      missingEquipment,
     });
 
     return NextResponse.json({ success: true, carNumber, folderUrl });

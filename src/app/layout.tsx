@@ -1,8 +1,7 @@
 import type { Metadata, Viewport } from 'next';
-import './globals.css';
 
 export const metadata: Metadata = {
-  title: 'ניהול רכבים / Учёт автомобилей',
+  title: 'ניהול רכבים',
   description: 'Internal vehicle management system',
   manifest: '/manifest.json',
 };
@@ -12,19 +11,10 @@ export const viewport: Viewport = {
   initialScale: 1,
   maximumScale: 1,
   userScalable: false,
-  themeColor: '#2563eb',
+  themeColor: '#16a34a',
 };
 
-export default function RootLayout({
-  children,
-}: {
-  children: React.ReactNode;
-}) {
-  return (
-    <html lang="he">
-      <body className="min-h-screen bg-slate-50">
-        {children}
-      </body>
-    </html>
-  );
+// The actual layout (html/body/lang/dir) lives in app/[locale]/layout.tsx
+export default function RootLayout({ children }: { children: React.ReactNode }) {
+  return children;
 }

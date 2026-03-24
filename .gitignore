@@ -6,6 +6,7 @@ node_modules/
 out/
 
 # Environment variables - NEVER commit these
+.env
 .env.local
 .env.*.local
 
@@ -16,3 +17,5 @@ dist/
 # Misc
 .DS_Store
 *.pem
+*.log
+npm-debug.log*
